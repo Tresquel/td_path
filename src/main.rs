@@ -1,24 +1,31 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde::Deserialize;
-use std::io::{Error, ErrorKind, Read};
 use std::fs::{self, File};
-use std::time::Instant;
+use std::io::{Error, ErrorKind, Read};
 use std::path::PathBuf;
+use std::time::Instant;
 
-// from: https://x4fx77x4f.github.io/dennispedia/teardown/tdpth.html
+/// from: <https://x4fx77x4f.github.io/dennispedia/teardown/tdpth.html>
 #[derive(Deserialize)]
 struct TDPath {
-    magic: [u8; 5],   // TDPTH
-    version: [u8; 3], // major, minor, patch
-    time: f32,        // length of path in seconds
-    length: u32,      // number of nodes
+    /// TDPTH
+    magic: [u8; 5],
+    /// major, minor, patch
+    version: [u8; 3],
+    /// length of path in seconds
+    time: f32,
+    /// number of nodes   
+    length: u32,
     nodes: Vec<Node>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct Node {
-    time: f32,  // timestamp in seconds
-    flags: u32, // unknown; either 0 or 1
+    /// timestamp in seconds
+    time: f32,
+    /// unknown; either 0 or 1  
+    flags: u32,
+    /// Position (X, Y, Z)
     pos: [f32; 3],
 }
 
@@ -66,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let path = dir?.path();
 
         if path.is_dir() {
-            continue;
+            continue; // we only want files
         }
 
         if path.extension().unwrap() == "pth" {
@@ -78,13 +85,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // build the lua file
             let mut lua = String::from("path = {\n");
 
-            lua.push_str(&format!("\tversion = '{}.{}.{}',\n", tdp.version[0], tdp.version[1], tdp.version[2]));
+            lua.push_str(&format!(
+                "\tversion = '{}.{}.{}',\n",
+                tdp.version[0], tdp.version[1], tdp.version[2]
+            ));
             lua.push_str(&format!("\ttime = {},\n", tdp.time));
             lua.push_str(&format!("\tlength = {},\n", tdp.length));
             lua.push_str("\tnodes = {\n");
 
             for node in tdp.nodes {
-                lua.push_str(&format!("\t\t{{ {}, {}, {} }},\n", node.pos[0], node.pos[1], node.pos[2]));
+                lua.push_str(&format!(
+                    "\t\t{{ {}, {}, {} }},\n",
+                    node.pos[0], node.pos[1], node.pos[2]
+                ));
             }
             lua.push_str("\t}\n}\n");
 
